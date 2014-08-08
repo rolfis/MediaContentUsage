@@ -1,0 +1,20 @@
+﻿<style type="text/css">
+  ul.media-content-usage {
+      list-style-type: none;
+      margin: 0px;
+      padding: 0px;
+  }
+</style>
+<div ng-controller="CTH.MediaContentUsageController" ng-model="media">
+
+    <ul class="media-content-usage" ng-show="media.HasContentUsage">
+        <li ng-repeat="node in media.Content">
+            <a href="#/content/content/edit/{{node.Id}}">{{node.Name}}</a> ({{node.Property}})
+        </li>
+    </ul>
+
+    <div ng-hide="media.HasContentUsage">
+        No content found that uses this media
+    </div>
+
+</div>

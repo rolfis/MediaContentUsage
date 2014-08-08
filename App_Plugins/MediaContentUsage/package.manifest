@@ -1,0 +1,17 @@
+﻿{     
+    propertyEditors: [      
+        {
+			alias: "CTH.MediaContentUsage",
+            name: "Media Content Usage",
+			
+            editor: {
+                view: "~/App_Plugins/MediaContentUsage/mediacontentusage.html"
+            }
+        }
+    ],
+
+    javascript: [
+        '~/App_Plugins/MediaContentUsage/mediacontentusage.controller.js',
+		'~/App_Plugins/MediaContentUsage/mediacontentusage.resource.js'
+    ]
+}
