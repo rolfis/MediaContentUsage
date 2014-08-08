@@ -15,3 +15,9 @@ select id,name from cmsPropertyType where datatypeid in (-87,1035,6211)
 select * from cmsDocument where nodeid=2057;
 
 select * from cmsPropertyData where contentNodeId=1691;
+
+
+-- latest mot azure ger också rätt versionid som bara är published
+select pd.contentNodeId,pd.propertyTypeId,d.published,d.text,pt.Name,pd.dataInt,pd.dataNvarchar,pd.dataNtext from cmsPropertyData pd, cmsdocument d, cmsPropertyType pt
+where pd.contentNodeId=d.nodeId and pd.propertytypeid=pt.id and pd.versionId=d.versionId and d.published=1 and (pd.dataInt=2108 or pd.dataNvarchar like '%2108%' or pd.dataNtext like '%2108%') and pd.propertytypeid in 
+(select id from cmsPropertyType where datatypeid in (-87,1068,2100,1035,1045));
