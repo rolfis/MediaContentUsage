@@ -1,4 +1,4 @@
-﻿//adds the resource to umbraco.resources module:
+//adds the resource to umbraco.resources module:
 angular.module('umbraco.resources').factory('mediaContentUsageResource',
     function ($q, $http) {
         return {
