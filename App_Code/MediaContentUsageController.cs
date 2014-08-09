@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -52,11 +52,10 @@ namespace CTH.Controllers
                 var db = ApplicationContext.DatabaseContext.Database;
 
                 // Get Content nodes
+                // TODO: datatypeid values should be parameterized in GetMediaContentUsage call
+                // TODO: ',' || dataInt || ',' || dataNvarchar || ',' || dataNtext || ',',
+                //       then search for '%,@1,%' and 'rel="@1"' to get a better match
                 var nodes = db.Query<DbContent>("select pd.contentNodeId,pd.propertyTypeId,d.text as nodeName,pt.Name as propertyName,pd.dataInt,pd.dataNvarchar,pd.dataNtext from cmsPropertyData pd, cmsdocument d, cmsPropertyType pt where pd.contentNodeId=d.nodeId and pd.propertytypeid=pt.id and pd.versionId=d.versionId and d.published=1 and (pd.dataInt=@0 or pd.dataNvarchar like '%' + @1 + '%' or pd.dataNtext like '%' + @1 + '%') and pd.propertytypeid in (select id from cmsPropertyType where datatypeid in (-87,1068,2100,1035,1045))", id, id.ToString());
-
-                LogHelper.Info<MediaContentUsageController>("LastSql: " + db.LastSQL);
-                LogHelper.Info<MediaContentUsageController>("LastArgs: " + db.LastArgs);
-                LogHelper.Info<MediaContentUsageController>("LastCommand: " + db.LastCommand);
 
                 // Iterate
                 foreach (var node in nodes)
