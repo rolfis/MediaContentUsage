@@ -55,6 +55,8 @@ namespace CTH.Controllers
                 // TODO: datatypeid values should be parameterized in GetMediaContentUsage call
                 // TODO: ',' || dataInt || ',' || dataNvarchar || ',' || dataNtext || ',',
                 //       then search for '%,@1,%' and 'rel="@1"' to get a better match
+                // select pd.contentNodeId,d.text as nodeName,pt.Name as propertyName,pd.dataInt,pd.dataNvarchar,pd.dataNtext,isnull(cast(pd.dataInt as nvarchar),'') + ',' + pd.dataNvarchar + ',' + isnull(cast(pd.dataNtext as nvarchar),'') + ',' as dataCombined from cmsPropertyData pd, cmsdocument d, cmsPropertyType pt where pd.contentNodeId=d.nodeId and pd.propertytypeid=pt.id and pd.versionId=d.versionId and d.published=1 and (isnull(cast(pd.dataInt as nvarchar),'') + ',' + pd.dataNvarchar + ',' + isnull(cast(pd.dataNtext as nvarchar),'') + ',' like '%,' + '2112' + ',%' or isnull(cast(pd.dataInt as nvarchar),'') + ',' + pd.dataNvarchar + ',' + isnull(cast(pd.dataNtext as nvarchar),'') + ',' like '%rel="' + '2112' + '"%') and pd.propertytypeid in (select id from cmsPropertyType where datatypeid in (-87,1068,2100,2120,1035,1045))
+
                 var nodes = db.Query<DbContent>("select pd.contentNodeId,pd.propertyTypeId,d.text as nodeName,pt.Name as propertyName,pd.dataInt,pd.dataNvarchar,pd.dataNtext from cmsPropertyData pd, cmsdocument d, cmsPropertyType pt where pd.contentNodeId=d.nodeId and pd.propertytypeid=pt.id and pd.versionId=d.versionId and d.published=1 and (pd.dataInt=@0 or pd.dataNvarchar like '%' + @1 + '%' or pd.dataNtext like '%' + @1 + '%') and pd.propertytypeid in (select id from cmsPropertyType where datatypeid in (-87,1068,2100,1035,1045))", id, id.ToString());
 
                 // Iterate
