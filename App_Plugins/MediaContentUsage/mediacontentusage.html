@@ -7,8 +7,12 @@
         </li>
     </ul>
 
-    <div ng-hide="media.HasContentUsage">
+    <div ng-hide="media.HasContentUsage" ng-if="media.MediaIsValid">
         No content found
+    </div>
+    
+    <div ng-hide="media.MediaIsValid">
+        This is not a Media node
     </div>
 
     <div ng-show="$scope.loading">

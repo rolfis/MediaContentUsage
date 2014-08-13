@@ -2,11 +2,11 @@
 angular.module('umbraco.resources').factory('mediaContentUsageResource',
     function ($q, $http) {
         return {
-            getMediaContentUsage: function (id) {
+            getMediaContentUsage: function (id, dataTypeIds) {
                 return $http({
                     url: "backoffice/CTH/MediaContentUsage/GetMediaContentUsage",
                     method: "GET",
-                    params: { id: id }
+                    params: { id: id, propertyTypes: dataTypeIds }
                 });
             }
         };
