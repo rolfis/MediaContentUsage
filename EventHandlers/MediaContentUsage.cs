@@ -101,7 +101,10 @@ namespace Chalmers
             foreach (var contentNode in args.PublishedEntities)
             {
                 // Remove current relations
-                RemoveAllMediaRelationsForContent(contentNode.Id);
+                if (rs.GetByChildId(contentNode.Id).Count() > 0)
+                {
+                    RemoveAllMediaRelationsForContent(contentNode.Id);
+                }
 
                 // Relate found Media to this Content
                 foreach (var mediaNodeId in FindMedia(contentNode.Id))
@@ -151,9 +154,15 @@ namespace Chalmers
         /// <param name="args"></param>
         private void RemoveMediaUsage(IPublishingStrategy sender, PublishEventArgs<IContent> args)
         {
+            // RelationService
+            IRelationService rs = ApplicationContext.Current.Services.RelationService;
+
             foreach (var contentNode in args.PublishedEntities)
             {
-                RemoveAllMediaRelationsForContent(contentNode.Id);
+                if (rs.GetByChildId(contentNode.Id).Count() > 0)
+                {
+                    RemoveAllMediaRelationsForContent(contentNode.Id);
+                }
             }
         }
 
@@ -164,9 +173,15 @@ namespace Chalmers
         /// <param name="args"></param>
         private void RemoveMediaUsage(IContentService sender, DeleteEventArgs<IContent> args)
         {
+            // RelationService
+            IRelationService rs = ApplicationContext.Current.Services.RelationService;
+
             foreach (var mediaNode in args.DeletedEntities)
             {
-                RemoveAllContentRelationsForMedia(mediaNode.Id);
+                if (rs.GetByParentId(mediaNode.Id).Count() > 0)
+                {
+                    RemoveAllContentRelationsForMedia(mediaNode.Id);
+                }
             }
         }
 
