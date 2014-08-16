@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Chalmers.MediaContentUsage
+namespace Chalmers
 {
     public class Constants
     {

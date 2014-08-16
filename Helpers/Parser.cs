@@ -7,7 +7,7 @@ using Umbraco.Core;
 using Umbraco.Core.Models;
 using Umbraco.Core.Logging;
 
-namespace Chalmers.MediaContentUsage.Helpers
+namespace Chalmers.Helpers
 {
     public class Parser
     {

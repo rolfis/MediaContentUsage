@@ -8,25 +8,25 @@ using Umbraco.Core.Models;
 using Umbraco.Core.Publishing;
 using Umbraco.Core.Services;
 using Umbraco.Core.Logging;
-using Chalmers.MediaContentUsage.Models;
-using Chalmers.MediaContentUsage.Helpers;
-using Chalmers.MediaContentUsage;
+using Chalmers.Models;
+using Chalmers.Helpers;
+using Chalmers;
 
-namespace Chalmers.MediaContentUsage
+namespace Chalmers
 {
-    public class EventHandler : ApplicationEventHandler
+    public class MediaContentUsage : ApplicationEventHandler
     {
         /// <summary>
         /// Binds to different events in Umbraco to handle relationship mappings
         /// </summary>
-        public EventHandler()
+        public MediaContentUsage()
         {
             ContentService.Published += AddMediaUsage;
             ContentService.UnPublished += RemoveMediaUsage;
             ContentService.Deleted += RemoveMediaUsage;
 
             /* this service or event is a lie, 7.1.4 code don't seem to trigger the events */
-            /* RelationService.DeletedRelationType += RelationService_DeletedRelationType; */
+            RelationService.DeletedRelationType += RelationService_DeletedRelationType;
         }
 
         /// <summary>
@@ -54,11 +54,11 @@ namespace Chalmers.MediaContentUsage
         /// <param name="e"></param>
         private void RelationService_DeletedRelationType(IRelationService sender, DeleteEventArgs<IRelationType> e)
         {
-            LogHelper.Info<EventHandler>(String.Format("RelationService_DeletedRelationType"));
+            LogHelper.Info<MediaContentUsage>(String.Format("RelationService_DeletedRelationType"));
 
             foreach (var item in e.DeletedEntities)
             {
-                LogHelper.Debug<EventHandler>(String.Format("item: {0}", item.Alias));
+                LogHelper.Debug<MediaContentUsage>(String.Format("item: {0}", item.Alias));
 
                 if (item.Alias == Constants.RelationTypeAlias)
                 {
@@ -66,7 +66,6 @@ namespace Chalmers.MediaContentUsage
                     AddMediaUsageForAllContent();
                 }
             }
-            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -82,7 +81,7 @@ namespace Chalmers.MediaContentUsage
             relationType.IsBidirectional = true;
             relationService.Save(relationType);
 
-            LogHelper.Info<EventHandler>(String.Format("Created RelationType '{0}' with alias '{1}'", Constants.RelationTypeName, Constants.RelationTypeAlias));
+            LogHelper.Info<MediaContentUsage>(String.Format("Created RelationType '{0}' with alias '{1}'", Constants.RelationTypeName, Constants.RelationTypeAlias));
         }
 
         /// <summary>
@@ -110,7 +109,7 @@ namespace Chalmers.MediaContentUsage
                     Relation relation = new Relation(mediaNodeId, contentNode.Id, relationType);
                     rs.Save(relation);
 
-                    LogHelper.Debug<EventHandler>(String.Format("Saved relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
+                    LogHelper.Debug<MediaContentUsage>(String.Format("Saved relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
                 }
             }
         }
@@ -140,7 +139,7 @@ namespace Chalmers.MediaContentUsage
                     Relation relation = new Relation(mediaNodeId, contentNodeId, relationType);
                     rs.Save(relation);
 
-                    LogHelper.Debug<EventHandler>(String.Format("Saved relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
+                    LogHelper.Debug<MediaContentUsage>(String.Format("Saved relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
                 }
             }
         }
@@ -180,12 +179,14 @@ namespace Chalmers.MediaContentUsage
             // RelationService
             IRelationService rs = ApplicationContext.Current.Services.RelationService;
 
+            LogHelper.Info<MediaContentUsage>(String.Format("Removing all Media relations for Content with id '{0}'", contentNodeId));
+
             // Content is child, query by child id
             foreach (var relation in rs.GetByChildId(contentNodeId))
             {
                 rs.Delete(relation);
 
-                LogHelper.Debug<EventHandler>(String.Format("Deleted relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
+                LogHelper.Debug<MediaContentUsage>(String.Format("Deleted relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
             }
         }
 
@@ -198,12 +199,14 @@ namespace Chalmers.MediaContentUsage
             // RelationService
             IRelationService rs = ApplicationContext.Current.Services.RelationService;
 
+            LogHelper.Info<MediaContentUsage>(String.Format("Removing all Content relations for Media with id '{0}'", mediaNodeId));
+
             // Content is child, query by child id
             foreach (var relation in rs.GetByParentId(mediaNodeId))
             {
                 rs.Delete(relation);
 
-                LogHelper.Debug<EventHandler>(String.Format("Deleted relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
+                LogHelper.Debug<MediaContentUsage>(String.Format("Deleted relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
             }
         }
 
@@ -248,12 +251,12 @@ namespace Chalmers.MediaContentUsage
             }
             catch (Exception e)
             {
-                LogHelper.Error<EventHandler>(e.Message, e);
+                LogHelper.Error<MediaContentUsage>(e.Message, e);
             }
 
             if (mediaNodeIds.Count > 0)
             {
-                LogHelper.Info<EventHandler>(String.Format("Media found for Content with id '{0}': {1}", contentNodeId, String.Join(",", mediaNodeIds.Distinct().ToArray())));
+                LogHelper.Info<MediaContentUsage>(String.Format("Media found for Content with id '{0}': {1}", contentNodeId, String.Join(",", mediaNodeIds.Distinct().ToArray())));
             }
 
             // Return distinct values
@@ -269,7 +272,7 @@ namespace Chalmers.MediaContentUsage
             // List of all found Content node ids
             List<int> contentNodeIds = new List<int>();
 
-            LogHelper.Info<EventHandler>(String.Format("Searching for all published Content..."));
+            LogHelper.Info<MediaContentUsage>(String.Format("Searching for all published Content..."));
 
             try
             {
@@ -285,10 +288,10 @@ namespace Chalmers.MediaContentUsage
             }
             catch (Exception e)
             {
-                LogHelper.Error<EventHandler>(e.Message, e);
+                LogHelper.Error<MediaContentUsage>(e.Message, e);
             }
 
-            LogHelper.Info<EventHandler>(String.Format("Content found: {0}", String.Join(",", contentNodeIds.ToArray())));
+            LogHelper.Info<MediaContentUsage>(String.Format("Content found: {0} nodes", contentNodeIds.Count()));
 
             return contentNodeIds;
         }

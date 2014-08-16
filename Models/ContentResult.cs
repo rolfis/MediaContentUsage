@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 
-namespace Chalmers.MediaContentUsage.Models
+namespace Chalmers.Models
 {
     public class ContentResult
     {
