@@ -10,17 +10,22 @@ using Umbraco.Core.Services;
 using Umbraco.Core.Logging;
 using Chalmers.MediaContentUsage.Models;
 using Chalmers.MediaContentUsage.Helpers;
+using Chalmers.MediaContentUsage;
 
 namespace Chalmers.MediaContentUsage
 {
     public class EventHandler : ApplicationEventHandler
     {
-        // Bind to events
+        /// <summary>
+        /// Binds to different events in Umbraco to handle relationship mappings
+        /// </summary>
         public EventHandler()
         {
             ContentService.Published += AddMediaUsage;
             ContentService.UnPublished += RemoveMediaUsage;
             ContentService.Deleted += RemoveMediaUsage;
+
+            /* this service or event is a lie, 7.1.4 code don't seem to trigger the events */
             /* RelationService.DeletedRelationType += RelationService_DeletedRelationType; */
         }
 
@@ -34,8 +39,8 @@ namespace Chalmers.MediaContentUsage
             // RelationService
             var relationService = ctx.Services.RelationService;
 
-            // RelationType is missing
-            if (relationService.GetRelationTypeByAlias("relateMediaToContent") == null)
+            // Create RelationType if it's missing
+            if (relationService.GetRelationTypeByAlias(Constants.RelationTypeAlias) == null)
 	        {
                 CreateRelationType();
                 AddMediaUsageForAllContent();
@@ -53,9 +58,9 @@ namespace Chalmers.MediaContentUsage
 
             foreach (var item in e.DeletedEntities)
             {
-                LogHelper.Info<EventHandler>(String.Format("item: {0}", item.Alias));
+                LogHelper.Debug<EventHandler>(String.Format("item: {0}", item.Alias));
 
-                if (item.Alias == "relateMediaToContent")
+                if (item.Alias == Constants.RelationTypeAlias)
                 {
                     CreateRelationType();
                     AddMediaUsageForAllContent();
@@ -72,86 +77,79 @@ namespace Chalmers.MediaContentUsage
             // RelationService
             var relationService = ApplicationContext.Current.Services.RelationService;
 
-            // RelationType alias and name
-            const string RelationTypeAlias = "relateMediaToContent";
-            const string RelationTypeName = "Relate Media and Content";
-
-            // http://our.umbraco.org/wiki/reference/api-cheatsheet/relationtypes-and-relations/object-guids-for-creating-relation-types
-            Guid RelationTypeMedia = new Guid("B796F64C-1F99-4FFB-B886-4BF4BC011A9C");
-            Guid RelationTypeDocument = new Guid("C66BA18E-EAF3-4CFF-8A22-41B16D66A972");
-
-            var relationType = new RelationType(RelationTypeDocument, RelationTypeMedia, RelationTypeAlias, RelationTypeName);
+            // Create new RelationType
+            var relationType = new RelationType(Constants.RelationTypeDocument, Constants.RelationTypeMedia, Constants.RelationTypeAlias, Constants.RelationTypeName);
             relationType.IsBidirectional = true;
-
-            LogHelper.Info<EventHandler>(String.Format("Creating RelationType '{0}' with alias '{1}'", RelationTypeName, RelationTypeAlias));
-
             relationService.Save(relationType);
+
+            LogHelper.Info<EventHandler>(String.Format("Created RelationType '{0}' with alias '{1}'", Constants.RelationTypeName, Constants.RelationTypeAlias));
         }
 
-        // Content is published, find Media relations
+        /// <summary>
+        /// Adds relation between Content and Media when Content is published
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void AddMediaUsage(IPublishingStrategy sender, PublishEventArgs<IContent> args)
         {
-            // ContentService
-            IContentService cs = ApplicationContext.Current.Services.ContentService;
-
             // RelationService
             IRelationService rs = ApplicationContext.Current.Services.RelationService;
 
             // RelationType
-            IRelationType relationType = rs.GetRelationTypeByAlias("relateMediaToContent");
+            IRelationType relationType = rs.GetRelationTypeByAlias(Constants.RelationTypeAlias);
 
             // Published Documents
             foreach (var contentNode in args.PublishedEntities)
             {
-                // LogHelper.Info<EventHandler>(String.Format("NodeId {0} published...", contentNode.Id));
-
-                // Find Media node ids for this Content node
-                List<int> mediaNodeIds = FindMedia(contentNode.Id);
-
                 // Remove current relations
                 RemoveAllMediaRelationsForContent(contentNode.Id);
 
                 // Relate found Media to this Content
-                foreach (var mediaNodeId in mediaNodeIds)
+                foreach (var mediaNodeId in FindMedia(contentNode.Id))
                 {
                     Relation relation = new Relation(mediaNodeId, contentNode.Id, relationType);
-                    LogHelper.Info<EventHandler>(String.Format("Saving relation with ParentId {0} and ChildId {1}", relation.ParentId, relation.ChildId));
                     rs.Save(relation);
+
+                    LogHelper.Debug<EventHandler>(String.Format("Saved relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
                 }
             }
         }
 
-        // Find Media relations for all published Content nodes
+        /// <summary>
+        /// Finds all published Content for this site and adds relations to Media
+        /// </summary>
         private void AddMediaUsageForAllContent()
         {
-            // ContentService
-            IContentService cs = ApplicationContext.Current.Services.ContentService;
-
             // RelationService
             IRelationService rs = ApplicationContext.Current.Services.RelationService;
 
             // RelationType
-            IRelationType relationType = rs.GetRelationTypeByAlias("relateMediaToContent");
+            IRelationType relationType = rs.GetRelationTypeByAlias(Constants.RelationTypeAlias);
 
-            // Published Documents
+            // Remove existing relations
+            if (rs.HasRelations(relationType))
+            {
+                rs.DeleteRelationsOfType(relationType);
+            }
+
+            // Relate Media in all Published Documents
             foreach (var contentNodeId in FindAllContent())
             {
-                // Find Media node ids for this Content node
-                List<int> mediaNodeIds = FindMedia(contentNodeId);
-
-                // Remove current relations
-                RemoveAllMediaRelationsForContent(contentNodeId);
-
-                // Relate found Media to this Content
-                foreach (var mediaNodeId in mediaNodeIds)
+                foreach (var mediaNodeId in FindMedia(contentNodeId))
                 {
                     Relation relation = new Relation(mediaNodeId, contentNodeId, relationType);
-                    LogHelper.Info<EventHandler>(String.Format("Saving relation with ParentId {0} and ChildId {1}", relation.ParentId, relation.ChildId));
                     rs.Save(relation);
+
+                    LogHelper.Debug<EventHandler>(String.Format("Saved relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
                 }
             }
         }
-        // Content is unpublished, remove all Media relations
+
+        /// <summary>
+        /// Removes relations to Media when Content is unpublished
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void RemoveMediaUsage(IPublishingStrategy sender, PublishEventArgs<IContent> args)
         {
             foreach (var contentNode in args.PublishedEntities)
@@ -160,7 +158,11 @@ namespace Chalmers.MediaContentUsage
             }
         }
 
-        // Media is deleted, remove all Content relations
+        /// <summary>
+        /// Removes relations to Content when Media is deleted
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         private void RemoveMediaUsage(IContentService sender, DeleteEventArgs<IContent> args)
         {
             foreach (var mediaNode in args.DeletedEntities)
@@ -169,70 +171,79 @@ namespace Chalmers.MediaContentUsage
             }
         }
 
-        // Remove all Media relations for a Content node
+        /// <summary>
+        /// Removes all Media relations for a Content node
+        /// </summary>
+        /// <param name="contentNodeId"></param>
         private void RemoveAllMediaRelationsForContent(int contentNodeId)
         {
-            List<IRelation> relations = new List<IRelation>();
-
             // RelationService
             IRelationService rs = ApplicationContext.Current.Services.RelationService;
 
             // Content is child, query by child id
             foreach (var relation in rs.GetByChildId(contentNodeId))
             {
-                LogHelper.Info<EventHandler>(String.Format("Deleting relation with ParentId {0} and ChildId {1}", relation.ParentId, relation.ChildId));
                 rs.Delete(relation);
+
+                LogHelper.Debug<EventHandler>(String.Format("Deleted relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
             }
         }
 
-        // Remove all Content relations for a Media node
+        /// <summary>
+        /// Removes all Content relations for a Media node
+        /// </summary>
+        /// <param name="mediaNodeId"></param>
         private void RemoveAllContentRelationsForMedia(int mediaNodeId)
         {
-            List<IRelation> relations = new List<IRelation>();
-
             // RelationService
             IRelationService rs = ApplicationContext.Current.Services.RelationService;
 
             // Content is child, query by child id
             foreach (var relation in rs.GetByParentId(mediaNodeId))
             {
-                LogHelper.Info<EventHandler>(String.Format("Deleting relation with ParentId {0} and ChildId {1}", relation.ParentId, relation.ChildId));
                 rs.Delete(relation);
+
+                LogHelper.Debug<EventHandler>(String.Format("Deleted relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
             }
         }
 
-        // Find Media nodes for a Content node
+        /// <summary>
+        /// Finds Media node ids for a Content node
+        /// </summary>
+        /// <param name="contentNodeId"></param>
+        /// <returns></returns>
         private List<int> FindMedia(int contentNodeId)
         {
-            List<int> mediaNodeIds = new List<int>();
-
             // Default Data Type ids (TODO: make this dynamic)
             // string propertyTypesList = "-87,1035,1045";
             string propertyTypesList = "-87,1035,1045,2100,2120";
 
-            // DataTypeService
-            // IDataTypeService ds  = ApplicationContext.Current.Services.DataTypeService;
+            // List of combined Property Data (should be only one)
+            List<string> combinedPropertyData = new List<string>();
 
-            LogHelper.Info<EventHandler>(String.Format("Searching Content with id '{0}' for Media...", contentNodeId));
+            // List of all found Media node ids
+            List<int> mediaNodeIds = new List<int>();
 
             try
             {
                 // Connect to the Umbraco DB
                 using (var db = ApplicationContext.Current.DatabaseContext.Database)
                 {
-                    // Get Properties for this Content node
-                    var nodes = db.Query<ContentPropertiesResult>("select pd.contentNodeId,d.text as nodeName,pt.Name as propertyName,isnull(cast(pd.dataInt as nvarchar(100)),'') + ',' + isnull(pd.dataNvarchar,'') + ',' + isnull(cast(pd.dataNtext as nvarchar(max)),'') + ',' as dataCombined from cmsPropertyData pd, cmsdocument d, cmsPropertyType pt where pd.contentNodeId=d.nodeId and pd.propertytypeid=pt.id and pd.versionId=d.versionId and d.published=1 and pd.contentNodeId=@0 and pd.propertytypeid in (select id from cmsPropertyType where datatypeid in (" + propertyTypesList + "))", contentNodeId);
-
-                    foreach (var node in nodes)
+                    // Combine the Content Property Data into a comma separated string
+                    foreach (var node in db.Query<ContentPropertiesResult>("select pd.contentNodeId,d.text as nodeName,pt.Name as propertyName,isnull(cast(pd.dataInt as nvarchar(100)),'') + ',' + isnull(pd.dataNvarchar,'') + ',' + isnull(cast(pd.dataNtext as nvarchar(max)),'') + ',' as dataCombined from cmsPropertyData pd, cmsdocument d, cmsPropertyType pt where pd.contentNodeId=d.nodeId and pd.propertytypeid=pt.id and pd.versionId=d.versionId and d.published=1 and pd.contentNodeId=@0 and pd.propertytypeid in (select id from cmsPropertyType where datatypeid in (" + propertyTypesList + "))", contentNodeId))
                     {
-                        // Discover Media in the combined PropertyData string
-                        List<int> foundNodes = Parser.GetMediaNodesFromString(node.dataCombined);
-
-                        foreach (var item in foundNodes)
-                        {
-                            mediaNodeIds.Add(item);
-                        }
+                        combinedPropertyData.Add(node.dataCombined);
                     }
+                }
+
+                // Discover Media in the combined PropertyData
+                foreach (var item in combinedPropertyData)
+                {
+                    foreach (var mediaNodeId in Parser.GetMediaNodesFromString(item))
+                    {
+                        mediaNodeIds.Add(mediaNodeId);
+                    }
+
                 }
             }
             catch (Exception e)
@@ -240,12 +251,13 @@ namespace Chalmers.MediaContentUsage
                 LogHelper.Error<EventHandler>(e.Message, e);
             }
 
+            if (mediaNodeIds.Count > 0)
+            {
+                LogHelper.Info<EventHandler>(String.Format("Media found for Content with id '{0}': {1}", contentNodeId, String.Join(",", mediaNodeIds.Distinct().ToArray())));
+            }
+
             // Return distinct values
-            List<int> distinctMediaNodeIds = mediaNodeIds.Distinct().ToList();
-
-            LogHelper.Info<EventHandler>(String.Format("Found Media: {0}", String.Join(",", distinctMediaNodeIds.ToArray())));
-
-            return distinctMediaNodeIds;
+            return mediaNodeIds.Distinct().ToList();
         }
 
         /// <summary>
@@ -254,6 +266,7 @@ namespace Chalmers.MediaContentUsage
         /// <returns>List of node ids</returns>
         private List<int> FindAllContent()
         {
+            // List of all found Content node ids
             List<int> contentNodeIds = new List<int>();
 
             LogHelper.Info<EventHandler>(String.Format("Searching for all published Content..."));
@@ -263,10 +276,8 @@ namespace Chalmers.MediaContentUsage
                 // Connect to the Umbraco DB
                 using (var db = ApplicationContext.Current.DatabaseContext.Database)
                 {
-                    // Get Properties for this Content node
-                    var nodes = db.Query<ContentResult>("select d.nodeId as Id, d.text as Name from cmsDocument d where d.published=1");
-
-                    foreach (var node in nodes)
+                    // Find all published Content
+                    foreach (var node in db.Query<ContentResult>("select d.nodeId as Id, d.text as Name from cmsDocument d where d.published=1"))
                     {
                         contentNodeIds.Add(node.Id);
                     }
@@ -277,7 +288,7 @@ namespace Chalmers.MediaContentUsage
                 LogHelper.Error<EventHandler>(e.Message, e);
             }
 
-            LogHelper.Info<EventHandler>(String.Format("Found Content: {0}", String.Join(",", contentNodeIds.ToArray())));
+            LogHelper.Info<EventHandler>(String.Format("Content found: {0}", String.Join(",", contentNodeIds.ToArray())));
 
             return contentNodeIds;
         }
