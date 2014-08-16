@@ -1,5 +1,5 @@
-MediaContentUsage
-=================
+Media Content Usage
+===================
 
 Property Editor for Media items in Umbraco 7.1.4, to find out which Content nodes references the media.
 
