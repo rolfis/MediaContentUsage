@@ -1,12 +1,12 @@
-//adds the resource to umbraco.resources module:
+﻿//adds the resource to umbraco.resources module:
 angular.module('umbraco.resources').factory('mediaContentUsageResource',
     function ($q, $http) {
         return {
-            getMediaContentUsage: function (id, dataTypeIds) {
+            getMediaContentUsage: function (id) {
                 return $http({
-                    url: "backoffice/CTH/MediaContentUsage/GetMediaContentUsage",
+                    url: "backoffice/Chalmers/MediaContentUsageApi/GetMediaContentUsage",
                     method: "GET",
-                    params: { id: id, propertyTypes: dataTypeIds }
+                    params: { id: id }
                 });
             }
         };

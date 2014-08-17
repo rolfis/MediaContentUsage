@@ -1,28 +1,21 @@
-{     
+﻿{     
     propertyEditors: [      
         {
-            alias: "CTH.MediaContentUsage",
+			alias: "Chalmers.MediaContentUsage",
             name: "Media Content Usage",
 			
             editor: {
                 view: "/App_Plugins/MediaContentUsage/mediacontentusage.html"
             },
 
-            prevalues:{
-                fields:[
-                    {
-                        label: "Data Type Ids",
-						description: "Comma separated list of Data Type Ids to search for Media NodeId in",
-                        key: "dataTypeIds",
-                        view: "textstring"
-                    }
-               ]
-            }
+			prevalues: {
+				fields: []
+			}
         }
     ],
 
     javascript: [
         '/App_Plugins/MediaContentUsage/mediacontentusage.controller.js',
-        '/App_Plugins/MediaContentUsage/mediacontentusage.resource.js'
+		'/App_Plugins/MediaContentUsage/mediacontentusage.resource.js'
     ]
 }

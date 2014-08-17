@@ -24,5 +24,15 @@ namespace Chalmers
         /// The GUID for Document RelationType
         /// </summary>
         public static Guid RelationTypeDocument = new Guid("C66BA18E-EAF3-4CFF-8A22-41B16D66A972");
+
+        /// <summary>
+        /// The default DataTypes for Properties to search for Media
+        /// </summary>
+        public const string DefaultDataTypes = "-87,1035,1045";
+
+        /// <summary>
+        /// The key in web.config for DataTypes
+        /// </summary>
+        public const string ConfigurationKeyDataTypes = "MediaContentUsageDataTypeList";
     }
 }

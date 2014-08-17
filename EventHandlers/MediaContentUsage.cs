@@ -21,12 +21,19 @@ namespace Chalmers
         /// </summary>
         public MediaContentUsage()
         {
-            ContentService.Published += AddMediaUsage;
-            ContentService.UnPublished += RemoveMediaUsage;
-            ContentService.Deleted += RemoveMediaUsage;
+            ContentService.Published += ContentService_Published;
+            ContentService.UnPublished += ContentService_UnPublished;
+
+            /* When Content or Media is Deleted, Umbraco removes the Relations by itself */
+            /* When Content is Trashed, the UnPublished event fires */
+            /* When Media is Trashed, Media Picker won't show the Media but it's still viewable from outside */
+
+            /* ContentService.Deleted += ContentService_Deleted;
+            MediaService.Deleted += MediaService_Deleted;
+            MediaService.Trashed += MediaService_Trashed; */
 
             /* this service or event is a lie, 7.1.4 code don't seem to trigger the events */
-            RelationService.DeletedRelationType += RelationService_DeletedRelationType;
+            /* RelationService.DeletedRelationType += RelationService_DeletedRelationType; */
         }
 
         /// <summary>
@@ -74,47 +81,14 @@ namespace Chalmers
         private void CreateRelationType()
         {
             // RelationService
-            var relationService = ApplicationContext.Current.Services.RelationService;
+            IRelationService rs = ApplicationContext.Current.Services.RelationService;
 
             // Create new RelationType
             var relationType = new RelationType(Constants.RelationTypeDocument, Constants.RelationTypeMedia, Constants.RelationTypeAlias, Constants.RelationTypeName);
             relationType.IsBidirectional = true;
-            relationService.Save(relationType);
+            rs.Save(relationType);
 
             LogHelper.Info<MediaContentUsage>(String.Format("Created RelationType '{0}' with alias '{1}'", Constants.RelationTypeName, Constants.RelationTypeAlias));
-        }
-
-        /// <summary>
-        /// Adds relation between Content and Media when Content is published
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void AddMediaUsage(IPublishingStrategy sender, PublishEventArgs<IContent> args)
-        {
-            // RelationService
-            IRelationService rs = ApplicationContext.Current.Services.RelationService;
-
-            // RelationType
-            IRelationType relationType = rs.GetRelationTypeByAlias(Constants.RelationTypeAlias);
-
-            // Published Documents
-            foreach (var contentNode in args.PublishedEntities)
-            {
-                // Remove current relations
-                if (rs.GetByChildId(contentNode.Id).Count() > 0)
-                {
-                    RemoveAllMediaRelationsForContent(contentNode.Id);
-                }
-
-                // Relate found Media to this Content
-                foreach (var mediaNodeId in FindMedia(contentNode.Id))
-                {
-                    Relation relation = new Relation(mediaNodeId, contentNode.Id, relationType);
-                    rs.Save(relation);
-
-                    LogHelper.Debug<MediaContentUsage>(String.Format("Saved relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
-                }
-            }
         }
 
         /// <summary>
@@ -128,7 +102,7 @@ namespace Chalmers
             // RelationType
             IRelationType relationType = rs.GetRelationTypeByAlias(Constants.RelationTypeAlias);
 
-            // Remove existing relations
+            // Remove all existing relations
             if (rs.HasRelations(relationType))
             {
                 rs.DeleteRelationsOfType(relationType);
@@ -148,80 +122,81 @@ namespace Chalmers
         }
 
         /// <summary>
-        /// Removes relations to Media when Content is unpublished
+        /// Adds relation between Content and Media when Content is published
         /// </summary>
         /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void RemoveMediaUsage(IPublishingStrategy sender, PublishEventArgs<IContent> args)
+        /// <param name="e"></param>
+        private void ContentService_Published(IPublishingStrategy sender, PublishEventArgs<IContent> e)
         {
             // RelationService
             IRelationService rs = ApplicationContext.Current.Services.RelationService;
 
-            foreach (var contentNode in args.PublishedEntities)
+            // ContentService
+            IContentService cs = ApplicationContext.Current.Services.ContentService;
+
+            // RelationType
+            IRelationType relationType = rs.GetRelationTypeByAlias(Constants.RelationTypeAlias);
+
+            // Published Documents
+            foreach (var contentNode in e.PublishedEntities)
             {
-                if (rs.GetByChildId(contentNode.Id).Count() > 0)
+                // Content is child, query by child and RelationType
+                var relations = rs.GetByChild(cs.GetById(contentNode.Id), Constants.RelationTypeAlias);
+
+                // Remove current relations
+                if (relations.Count() > 0)
                 {
-                    RemoveAllMediaRelationsForContent(contentNode.Id);
+                    LogHelper.Info<MediaContentUsage>(String.Format("Removing all Media relations for published Content with id '{0}'", contentNode.Id));
+
+                    foreach (var relation in relations)
+                    {
+                        rs.Delete(relation);
+
+                        LogHelper.Debug<MediaContentUsage>(String.Format("Deleted relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
+                    }
+                }
+
+                // Relate found Media to this Content
+                foreach (var mediaNodeId in FindMedia(contentNode.Id))
+                {
+                    Relation relation = new Relation(mediaNodeId, contentNode.Id, relationType);
+                    rs.Save(relation);
+
+                    LogHelper.Debug<MediaContentUsage>(String.Format("Saved relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
                 }
             }
         }
 
         /// <summary>
-        /// Removes relations to Content when Media is deleted
+        /// Updates relations to Media when Content is unpublished
         /// </summary>
         /// <param name="sender"></param>
-        /// <param name="args"></param>
-        private void RemoveMediaUsage(IContentService sender, DeleteEventArgs<IContent> args)
+        /// <param name="e"></param>
+        private void ContentService_UnPublished(IPublishingStrategy sender, PublishEventArgs<IContent> e)
         {
             // RelationService
             IRelationService rs = ApplicationContext.Current.Services.RelationService;
 
-            foreach (var mediaNode in args.DeletedEntities)
+            // ContentService
+            IContentService cs = ApplicationContext.Current.Services.ContentService;
+
+            foreach (var contentNode in e.PublishedEntities)
             {
-                if (rs.GetByParentId(mediaNode.Id).Count() > 0)
+                // Content is child, query by child and RelationType
+                var relations = rs.GetByChild(cs.GetById(contentNode.Id), Constants.RelationTypeAlias);
+
+                if (relations.Count() > 0)
                 {
-                    RemoveAllContentRelationsForMedia(mediaNode.Id);
+                    LogHelper.Info<MediaContentUsage>(String.Format("Updating all Media relations for unpublished Content with id '{0}'", contentNode.Id));
+
+                    foreach (var relation in relations)
+                    {
+                        relation.Comment = "content is unpublished";
+                        rs.Save(relation);
+
+                        LogHelper.Debug<MediaContentUsage>(String.Format("Updated relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
+                    }
                 }
-            }
-        }
-
-        /// <summary>
-        /// Removes all Media relations for a Content node
-        /// </summary>
-        /// <param name="contentNodeId"></param>
-        private void RemoveAllMediaRelationsForContent(int contentNodeId)
-        {
-            // RelationService
-            IRelationService rs = ApplicationContext.Current.Services.RelationService;
-
-            LogHelper.Info<MediaContentUsage>(String.Format("Removing all Media relations for Content with id '{0}'", contentNodeId));
-
-            // Content is child, query by child id
-            foreach (var relation in rs.GetByChildId(contentNodeId))
-            {
-                rs.Delete(relation);
-
-                LogHelper.Debug<MediaContentUsage>(String.Format("Deleted relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
-            }
-        }
-
-        /// <summary>
-        /// Removes all Content relations for a Media node
-        /// </summary>
-        /// <param name="mediaNodeId"></param>
-        private void RemoveAllContentRelationsForMedia(int mediaNodeId)
-        {
-            // RelationService
-            IRelationService rs = ApplicationContext.Current.Services.RelationService;
-
-            LogHelper.Info<MediaContentUsage>(String.Format("Removing all Content relations for Media with id '{0}'", mediaNodeId));
-
-            // Content is child, query by child id
-            foreach (var relation in rs.GetByParentId(mediaNodeId))
-            {
-                rs.Delete(relation);
-
-                LogHelper.Debug<MediaContentUsage>(String.Format("Deleted relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
             }
         }
 
@@ -232,9 +207,11 @@ namespace Chalmers
         /// <returns></returns>
         private List<int> FindMedia(int contentNodeId)
         {
-            // Default Data Type ids (TODO: make this dynamic)
-            // string propertyTypesList = "-87,1035,1045";
-            string propertyTypesList = "-87,1035,1045,2100,2120";
+            // Property DataTypes to search for Media
+            string configurationPropertyTypesList =  System.Configuration.ConfigurationManager.AppSettings[Constants.ConfigurationKeyDataTypes];
+            string propertyTypesList = String.IsNullOrEmpty(configurationPropertyTypesList) ? Constants.DefaultDataTypes : configurationPropertyTypesList;
+
+            LogHelper.Debug<MediaContentUsage>(String.Format("Property DataTypes: {0}", propertyTypesList));
 
             // List of combined Property Data (should be only one)
             List<string> combinedPropertyData = new List<string>();
@@ -247,7 +224,7 @@ namespace Chalmers
                 // Connect to the Umbraco DB
                 using (var db = ApplicationContext.Current.DatabaseContext.Database)
                 {
-                    // Combine the Content Property Data into a comma separated string
+                    // Combine the Property Data into a comma separated string
                     foreach (var node in db.Query<ContentPropertiesResult>("select pd.contentNodeId,d.text as nodeName,pt.Name as propertyName,isnull(cast(pd.dataInt as nvarchar(100)),'') + ',' + isnull(pd.dataNvarchar,'') + ',' + isnull(cast(pd.dataNtext as nvarchar(max)),'') + ',' as dataCombined from cmsPropertyData pd, cmsdocument d, cmsPropertyType pt where pd.contentNodeId=d.nodeId and pd.propertytypeid=pt.id and pd.versionId=d.versionId and d.published=1 and pd.contentNodeId=@0 and pd.propertytypeid in (select id from cmsPropertyType where datatypeid in (" + propertyTypesList + "))", contentNodeId))
                     {
                         combinedPropertyData.Add(node.dataCombined);

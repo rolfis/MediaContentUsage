@@ -1,22 +1,18 @@
-<div ng-controller="CTH.MediaContentUsageController" ng-model="media">
+﻿<div ng-controller="Chalmers.MediaContentUsageController" ng-model="media">
 
     <ul class="unstyled" ng-show="media.HasContentUsage">
         <li ng-repeat="node in media.Content">
             <i class="icon-umb-content"></i>
-            <a href="#/content/content/edit/{{node.Id}}">{{node.Name}}</a> <small>{{node.Property}}</small>
+            <a href="#/content/content/edit/{{node.Id}}">{{node.Name}}</a> <small ng-show="node.Comment">({{node.Comment}})</small>
         </li>
     </ul>
 
-    <div ng-hide="media.HasContentUsage" ng-if="media.MediaIsValid">
+    <div ng-hide="media.HasContentUsage" ng-if="!$scope.loading">
         No content found
-    </div>
-    
-    <div ng-hide="media.MediaIsValid">
-        This is not a Media node
     </div>
 
     <div ng-show="$scope.loading">
         Searching for content...
     </div>
-    
+
 </div>
