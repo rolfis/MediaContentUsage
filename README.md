@@ -18,6 +18,12 @@ Install
 If installing from source, compile into Chalmers.MediaContentUsage.dll and copy to bin folder. Also copy the App_Plugins folder to get the Property Editor. There is also packages in "Releases" that can be installed in the Developer section of Umbraco Backoffice.
 
 
+Image property
+--------------
+
+Create a new DataType in the Developer section that uses "Chalmers.MediaContentUsage" (this is already done in the package). Add a property to your Image MediaType with this DataType. This will trigger the Property Editor and fetch relations to Content for the Image.
+
+
 Re-indexing
 -----------
 
