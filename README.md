@@ -30,4 +30,4 @@ Re-indexing
 When installed for the first time, the new RelationType is created and all published Content is searched for Media relations. If you add DataTypes via web.config or want to re-index the relations this can be done by deleting the RelationType in Umbraco Backoffice and restarting the Application Pool.
 
 
-![alt text](https://raw.githubusercontent.com/rolfis/MediaContentUsage/master/MediaContentUsage.png)
+![alt text](https://raw.githubusercontent.com/rolfis/MediaContentUsage/master/MediaContentUsageExample.png)
