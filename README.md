@@ -3,7 +3,7 @@ Media Content Usage
 
 Event Handler and Property Editor for Media items in Umbraco 7.1.4, to find which Content references different Media.
 
-Creates a new RelationType called "Relate Media and Content". Listens to Published and UnPublished events for Content and adds or updates relations between Media and Content that can be found in different Properties for relevant DataTypes.
+Creates a new RelationType called "Relate Media and Content". Listens to Published events for Content and adds relations between Media and Content that can be found in different Properties for relevant DataTypes.
 
 The relations can be read in Umbraco Backoffice in the Developer section, or with the provided Property Editor called "Media Content Usage". When a property of this type is placed on Media Items, it gives the editor information and links to referenced Content.
 
