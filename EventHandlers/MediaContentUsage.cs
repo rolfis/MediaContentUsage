@@ -21,19 +21,13 @@ namespace Chalmers
         /// </summary>
         public MediaContentUsage()
         {
+            // Watch the Published event, if UnPublished we don't care as Published or Trashed on the
+            // Content node will be used instead when reading from the RelationService in the API Controller.
+            // When Content or Media Recycle bin is emptied, Umbraco takes care of the relations cleanup.
             ContentService.Published += ContentService_Published;
-            ContentService.UnPublished += ContentService_UnPublished;
 
-            /* When Content or Media is Deleted, Umbraco removes the Relations by itself */
-            /* When Content is Trashed, the UnPublished event fires */
-            /* When Media is Trashed, Media Picker won't show the Media but it's still viewable from outside */
-
-            /* ContentService.Deleted += ContentService_Deleted;
-            MediaService.Deleted += MediaService_Deleted;
-            MediaService.Trashed += MediaService_Trashed; */
-
-            /* this service or event is a lie, 7.1.4 code don't seem to trigger the events */
-            /* RelationService.DeletedRelationType += RelationService_DeletedRelationType; */
+            // This event should trigger re-generation of RelationType and re-index, but event seems to not fire
+            RelationService.DeletedRelationType += RelationService_DeletedRelationType;
         }
 
         /// <summary>
@@ -168,39 +162,6 @@ namespace Chalmers
         }
 
         /// <summary>
-        /// Updates relations to Media when Content is unpublished
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void ContentService_UnPublished(IPublishingStrategy sender, PublishEventArgs<IContent> e)
-        {
-            // RelationService
-            IRelationService rs = ApplicationContext.Current.Services.RelationService;
-
-            // ContentService
-            IContentService cs = ApplicationContext.Current.Services.ContentService;
-
-            foreach (var contentNode in e.PublishedEntities)
-            {
-                // Content is child, query by child and RelationType
-                var relations = rs.GetByChild(cs.GetById(contentNode.Id), Constants.RelationTypeAlias);
-
-                if (relations.Count() > 0)
-                {
-                    LogHelper.Info<MediaContentUsage>(String.Format("Updating all Media relations for unpublished Content with id '{0}'", contentNode.Id));
-
-                    foreach (var relation in relations)
-                    {
-                        relation.Comment = "content is unpublished";
-                        rs.Save(relation);
-
-                        LogHelper.Debug<MediaContentUsage>(String.Format("Updated relation: ParentId {0} ChildId {1}", relation.ParentId, relation.ChildId));
-                    }
-                }
-            }
-        }
-
-        /// <summary>
         /// Finds Media node ids for a Content node
         /// </summary>
         /// <param name="contentNodeId"></param>
@@ -224,7 +185,7 @@ namespace Chalmers
                 // Connect to the Umbraco DB
                 using (var db = ApplicationContext.Current.DatabaseContext.Database)
                 {
-                    // Combine the Property Data into a comma separated string
+                    // Combine the Property Data into a comma separated string from published Content node
                     foreach (var node in db.Query<ContentPropertiesResult>("select pd.contentNodeId,d.text as nodeName,pt.Name as propertyName,isnull(cast(pd.dataInt as nvarchar(100)),'') + ',' + isnull(pd.dataNvarchar,'') + ',' + isnull(cast(pd.dataNtext as nvarchar(max)),'') + ',' as dataCombined from cmsPropertyData pd, cmsdocument d, cmsPropertyType pt where pd.contentNodeId=d.nodeId and pd.propertytypeid=pt.id and pd.versionId=d.versionId and d.published=1 and pd.contentNodeId=@0 and pd.propertytypeid in (select id from cmsPropertyType where datatypeid in (" + propertyTypesList + "))", contentNodeId))
                     {
                         combinedPropertyData.Add(node.dataCombined);

@@ -56,6 +56,8 @@ namespace Chalmers.Controllers
                     cn.Name = csNode.Name;
                     cn.Path = csNode.Path;
                     cn.Published = csNode.Published;
+                    cn.Trashed = csNode.Trashed;
+                    cn.State = cn.Trashed ? "trashed" : cn.Published == false ? "unpublished" : "";
                     cn.PathName = NodePathAsNameString(csNode.Id, csNode.Path);
                     cn.Comment = relation.Comment;
 
@@ -85,9 +87,13 @@ namespace Chalmers.Controllers
             {
                 if (Int32.TryParse(token, out r))
                 {
-                    if (r != -1 && r!= n)
+                    if (r != -1 && r != -20 && r!= n)
                     {
                         path.Add(cs.GetById(r).Name);
+                    }
+                    else if (r == -20)
+                    {
+                        path.Add("Recycle Bin");
                     }
                 }
             }
