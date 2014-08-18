@@ -19,11 +19,13 @@ namespace Chalmers.Helpers
         public static List<int> GetMediaNodesFromString(string property)
         {
             List<int> parsedTokens = new List<int>();
+
             int result;
 
             string[] tokens = property.Split(',');
 
             LogHelper.Debug<Parser>(String.Format("Incoming propertyString: {0}", property));
+            LogHelper.Debug<Parser>(String.Format("Tokens to TryParse(): {0}", tokens.Length));
 
             // Find integers (possible Media node ids)
             foreach (var item in tokens)

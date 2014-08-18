@@ -24,6 +24,7 @@ namespace Chalmers.Controllers
         public MediaContent GetMediaContentUsage(int id)
         {
             var mc = new MediaContent();
+
             mc.MediaNodeId = id;
             mc.HasContentUsage = false;
             mc.Content = new List<ContentNode>();
@@ -48,14 +49,50 @@ namespace Chalmers.Controllers
                 foreach (var relation in relations)
                 {
                     var cn = new ContentNode();
-                    cn.Id = relation.ChildId;
-                    cn.Name = cs.GetById(cn.Id).Name;
+
+                    var csNode = cs.GetById(relation.ChildId);
+
+                    cn.Id = csNode.Id;
+                    cn.Name = csNode.Name;
+                    cn.Path = csNode.Path;
+                    cn.Published = csNode.Published;
+                    cn.PathName = NodePathAsNameString(csNode.Id, csNode.Path);
                     cn.Comment = relation.Comment;
+
                     mc.Content.Add(cn);
                 }
             }
 
             return mc;
+        }
+
+        /// <summary>
+        /// Return a path to content as string with node names
+        /// </summary>
+        /// <param name="n">Node Id</param>
+        /// <param name="p">Path</param>
+        /// <returns></returns>
+        private string NodePathAsNameString(int n, string p)
+        {
+            // ContentService
+            var cs = ApplicationContext.Current.Services.ContentService;
+
+            int r;
+            string[] tokens = p.Split(',');
+            List<string> path = new List<string>();
+
+            foreach (var token in tokens)
+            {
+                if (Int32.TryParse(token, out r))
+                {
+                    if (r != -1 && r!= n)
+                    {
+                        path.Add(cs.GetById(r).Name);
+                    }
+                }
+            }
+
+            return string.Join(" > ", path);
         }
     }
 }

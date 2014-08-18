@@ -3,15 +3,17 @@
     <ul class="unstyled" ng-show="media.HasContentUsage">
         <li ng-repeat="node in media.Content">
             <i class="icon-umb-content"></i>
-            <a href="#/content/content/edit/{{node.Id}}">{{node.Name}}</a> <small ng-show="node.Comment">({{node.Comment}})</small>
+            <span style="color:grey;" ng-show="node.PathName" ng-if="showPath">{{node.PathName}} &gt; </span>
+            <a href="#/content/content/edit/{{node.Id}}">{{node.Name}}</a>
+            <small ng-show="!node.Published">(unpublished)</small>
         </li>
     </ul>
 
-    <div ng-hide="media.HasContentUsage" ng-if="!$scope.loading">
+    <div ng-hide="media.HasContentUsage" ng-if="!loading">
         No content found
     </div>
 
-    <div ng-show="$scope.loading">
+    <div ng-show="loading">
         Searching for content...
     </div>
 

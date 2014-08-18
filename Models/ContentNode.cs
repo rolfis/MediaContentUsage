@@ -9,6 +9,9 @@ namespace Chalmers.Models
     {
         public int Id { get; set; }
         public string Name { get; set; }
+        public string Path { get; set; }
+        public string PathName { get; set; }
         public string Comment { get; set; }
+        public bool Published { get; set; }
     }
 }

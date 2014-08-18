@@ -9,7 +9,14 @@
             },
 
 			prevalues: {
-				fields: []
+				fields: [
+					{
+                        label: "Show content path",
+						description: "Shows the whole path to the content nodes",
+                        key: "showPath",
+                        view: "boolean"
+                    }
+				]
 			}
         }
     ],
