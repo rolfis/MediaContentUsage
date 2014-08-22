@@ -11,9 +11,16 @@ Media Content Usage also looks for relations in TinyMCE Property Editors using t
 
 The DataTypes to search PropertyData for are configurable in web.config, with the key "MediaContentUsageDataTypeList". If this key is missing Media Content Usage searches PropertyData for the built-in and default shipped Richtext Editor and Media Pickers (-87,1035,1045). You can see your DataType id in the URL when editing the DataType in Umbraco Backoffice.
 
+Example:
+```
+<appSettings>
+    <add key="MediaContentUsageDataTypeList" value="-87,1035,1045,2100,2120" />
+</appSettings>
+```
 
-Install
--------
+
+Compile and Install
+-------------------
 
 If installing from source, compile into Chalmers.MediaContentUsage.dll and copy to bin folder. Also copy the App_Plugins folder to get the Property Editor.
 
@@ -26,7 +33,7 @@ For Umbraco packages to install, [please see the project page on our](http://our
 Image property
 --------------
 
-Create a new DataType in the Developer section that uses "Chalmers.MediaContentUsage" (this is already done in the package). Add a property to your Image MediaType with this DataType. This will trigger the Property Editor and fetch relations to Content for the Image.
+Create a new DataType in the Developer section that uses "Chalmers.MediaContentUsage" (this is already done in the package). Add a property to your Image MediaType with this DataType. This will trigger the Property Editor and fetch relations to Content for the Image. 
 
 
 Re-indexing
