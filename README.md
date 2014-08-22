@@ -15,7 +15,12 @@ The DataTypes to search PropertyData for are configurable in web.config, with th
 Install
 -------
 
-If installing from source, compile into Chalmers.MediaContentUsage.dll and copy to bin folder. Also copy the App_Plugins folder to get the Property Editor. There is also packages in "Releases" that can be installed in the Developer section of Umbraco Backoffice.
+If installing from source, compile into Chalmers.MediaContentUsage.dll and copy to bin folder. Also copy the App_Plugins folder to get the Property Editor.
+
+Umbraco package
+---------------
+
+For Umbraco packages to install, [please see the project page on our](http://our.umbraco.org/projects/backoffice-extensions/media-content-usage).
 
 
 Image property
