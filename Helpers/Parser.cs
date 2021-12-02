@@ -58,14 +58,14 @@ namespace Chalmers.Helpers
             }
 
             // Look for UDI properties
-            if (property.Contains("data-udi=\"umb://media"))
+            if (property.Contains("umb://media"))
             {
-                foreach (Match m in Regex.Matches(property, "data-udi=\"(?<Identifier>[^\"]+)"))
+                foreach (Match m in Regex.Matches(property, "umb://media/([^,|$|\"]+)"))
                 {
-                    LogHelper.Info<Parser>(String.Format("Match in data-udi attribute: {0}", m.Groups["Identifier"].Value));
+                    LogHelper.Info<Parser>(String.Format("Match in data-udi attribute: {0}", m.Value));
 
                     // Try and parse as UDI
-                    if (GuidUdi.TryParse(m.Groups["Identifier"].Value, out GuidUdi udi))
+                    if (GuidUdi.TryParse(m.Value, out GuidUdi udi))
                     {
                         // Media for real
                         if (IsMedia(udi))
