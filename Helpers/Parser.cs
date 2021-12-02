@@ -19,9 +19,6 @@ namespace Chalmers.Helpers
         {
             List<int> parsedTokens = new List<int>();
 
-            int result;
-            Udi udiResult;
-
             string[] tokens = property.Split(',');
 
             LogHelper.Debug<Parser>(String.Format("Incoming propertyString: {0}", property));
@@ -31,7 +28,7 @@ namespace Chalmers.Helpers
             foreach (var item in tokens)
             {
                 // Try and parse as integer
-                if (Int32.TryParse(item, out result))
+                if (Int32.TryParse(item, out int result))
                 {
                     // Media for real
                     if (IsMedia(result))
@@ -46,10 +43,10 @@ namespace Chalmers.Helpers
             {
                 LogHelper.Debug<Parser>(String.Format("Property contains rel attribute"));
 
-                foreach (Match m in Regex.Matches(property, @"rel=.(\d+)"))
+                foreach (Match m in Regex.Matches(property, @"rel=.(?<Identifier>\d+)"))
                 {
                     // Try and parse as integer
-                    if (Int32.TryParse(m.Value.Substring(5, m.Value.Length - 5), out result))
+                    if (Int32.TryParse(m.Groups["Identifier"].Value, out int result))
                     {
                         // Media for real
                         if (IsMedia(result))
@@ -60,7 +57,6 @@ namespace Chalmers.Helpers
                 }
             }
 
-            // data-udi="umb://media/1aeaf66774a34256b8e44b1edec1bb32"
             // Look for UDI properties
             if (property.Contains("data-udi=\"umb://media"))
             {
