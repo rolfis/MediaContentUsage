@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Linq;
-using System.Web;
 using Umbraco.Core;
 using Umbraco.Core.Models;
 using Umbraco.Core.Logging;
@@ -21,6 +20,7 @@ namespace Chalmers.Helpers
             List<int> parsedTokens = new List<int>();
 
             int result;
+            Udi udiResult;
 
             string[] tokens = property.Split(',');
 
@@ -60,6 +60,26 @@ namespace Chalmers.Helpers
                 }
             }
 
+            // data-udi="umb://media/1aeaf66774a34256b8e44b1edec1bb32"
+            // Look for UDI properties
+            if (property.Contains("data-udi=\"umb://media"))
+            {
+                foreach (Match m in Regex.Matches(property, "data-udi=\"(?<Identifier>[^\"]+)"))
+                {
+                    LogHelper.Info<Parser>(String.Format("Match in data-udi attribute: {0}", m.Groups["Identifier"].Value));
+
+                    // Try and parse as UDI
+                    if (GuidUdi.TryParse(m.Groups["Identifier"].Value, out GuidUdi udi))
+                    {
+                        // Media for real
+                        if (IsMedia(udi))
+                        {
+                            parsedTokens.Add(MediaId(udi));
+                        }
+                    }
+                }
+            }
+
             // Return distinct values
             return parsedTokens.Distinct().ToList();
         }
@@ -85,6 +105,45 @@ namespace Chalmers.Helpers
             {
                 return true;
             }
+        }
+
+        /// <summary>
+        /// Checks if a Node id is Media
+        /// </summary>
+        /// <param name="identifier">GuidUdi</param>
+        /// <returns>True if Media, otherwise false</returns>
+        public static bool IsMedia(GuidUdi identifier)
+        {
+            // MediaService
+            var ms = ApplicationContext.Current.Services.MediaService;
+
+            // Load Media
+            IMedia mediaItem = ms.GetById(identifier.Guid);
+
+            if (mediaItem == null)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Get Media integer id from a GuidUdi
+        /// </summary>
+        /// <param name="identifier">GuidUdi</param>
+        /// <returns>Media id</returns>
+        public static int MediaId(GuidUdi identifier)
+        {
+            // MediaService
+            var ms = ApplicationContext.Current.Services.MediaService;
+
+            // Load Media
+            IMedia mediaItem = ms.GetById(identifier.Guid);
+
+            return mediaItem.Id;
         }
     }
 }
