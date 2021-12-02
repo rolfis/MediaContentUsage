@@ -1,13 +1,15 @@
 Media Content Usage
 ===================
 
-Event Handler and Property Editor for Media items in Umbraco 7.1.4, to find which Content references different Media.
+Event Handler and Property Editor for Media items in Umbraco 7.x, to find which Content references different Media.
 
 Creates a new RelationType called "Relate Media and Content". Listens to Published events for Content and adds relations between Media and Content that can be found in different Properties for relevant DataTypes.
 
 The relations can be read in Umbraco Backoffice in the Developer section, or with the provided Property Editor called "Media Content Usage". When a property of this type is placed on Media Items, it gives the editor information and links to referenced Content.
 
 Media Content Usage also looks for relations in TinyMCE Property Editors using the "rel" attribute. Media Picker in TinyMCE for Umbraco 7.1.x writes the "rel" attribute with Media Nodeid. If you have old content from 6.x, you need to re-pick the image in the TinyMCE before Media Content Usage can find Media in TinyMCE properties like Body Text.
+
+In 7.15.7 (tested), it handles umb://media UDI's in property data.
 
 The DataTypes to search PropertyData for are configurable in web.config, with the key "MediaContentUsageDataTypeList". If this key is missing Media Content Usage searches PropertyData for the built-in and default shipped Richtext Editor and Media Pickers (-87,1035,1045). You can see your DataType id in the URL when editing the DataType in Umbraco Backoffice.
 
